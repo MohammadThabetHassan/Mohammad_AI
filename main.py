@@ -1,9 +1,8 @@
+import time
 import streamlit as st
 from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import google.generativeai as genai
-
-# API key and configuration (replace with your own)
 genai.configure(api_key="AIzaSyBtXDeujD8MIhE4jJODOBLiejs8J_DUcPY")
 generation_config = {
     "temperature": 0.9,
@@ -36,9 +35,6 @@ model = genai.GenerativeModel(model_name="gemini-1.0-pro-001",
 
 convo = model.start_chat(history=[])
 
-# Initialize conversation history
-conversation_history = {}
-
 
 def search_pdf(chunks, question):
   relevant_chunks = []
@@ -47,14 +43,42 @@ def search_pdf(chunks, question):
       relevant_chunks.append(chunk)
   return '\n'.join(relevant_chunks)
 
-
 def add_history(user_input, response):
-  conversation_history[user_input] = response
-  return conversation_history
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
+    st.session_state.messages.append({"sender": "ChatBot", "content": response})
+    st.session_state.messages.append({"sender": "You", "content": user_input})
 
+    reversed_messages = list(reversed(st.session_state.messages))
+
+    for id, message in enumerate(reversed_messages):
+        st.sidebar.text_area(f"{id}. {message['sender']}",
+                             message["content"],
+                             disabled=True,
+                             height=int(len(message["content"]) / 3))
+st.set_page_config(
+    page_title="Mohammad AI Chatbot",
+    page_icon="path_to_your_icon_file",
+)
 def main():
+  st.markdown("""
+      <style>
+      .reportview-container {
+          background: #002b36;
+      }
+      .main {
+          color: #fafafa;
+          background-color: #586e75;
+      }
+      body {
+          color: #fafafa;
+          font-family: "Sans Serif";
+      }
+      </style>
+      """, unsafe_allow_html=True)
   st.title("Mohammad AI Chatbot")
+
   pdf = st.file_uploader("upload file ", type="pdf")
 
   if pdf is not None:
@@ -62,39 +86,125 @@ def main():
     text = ""
     for page in pdf_reader.pages:
       text += page.extract_text()
-    splitter = RecursiveCharacterTextSplitter(chunk_size=1000,
-                                              chunk_overlap=200)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=10000,
+                                              chunk_overlap=300)
     chunks = splitter.split_text(text)
 
     for chunk in chunks:
-      if chunk.strip():
-       convo.send_message(chunk)
-
+        if chunk.strip():
+            if isinstance(chunk, str) and chunk.strip() != "":
+                for _ in range(5):  # Retry up to 5 times
+                    try:
+                        if chunk.strip():  # Check if chunk is not empty
+                            convo.send_message(chunk)
+                            break  # If the request is successful, break the loop
+                    except Exception as e:
+                        if "contents.parts must not be empty" in str(e):
+                            print(f"Skipping empty chunk.")
+                            break
+                        else:
+                            print(f"Error: {e}. Retrying...")
+                            time.sleep(5)  # Wait for 5 seconds before retrying
+            else:
+                print(f"Invalid chunk: {chunk}")
   st.write(
       "Hi there! How can I assist you today? Ask about the PDF by starting with 'QUESTION:'"
   )
-  x = str(st.text_input("Enter message or question here"))
+  col1, col2 = st.columns([3, 1])
+
+  x = col1.text_input("Enter message or question here")
+  col2.markdown("""
+  <style>
+  /* CSS */
+  .button-85 {
+    padding: 0.6em 2em;
+    border: none;
+    outline: none;
+    color: rgb(255, 255, 255);
+    background: #111;
+    cursor: pointer;
+    position: relative;
+    z-index: 0;
+    border-radius: 10px;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    margin-top: 25px;
+  }
+
+  .button-85:before {
+    content: "";
+    background: linear-gradient(
+      45deg,
+      #ff0000,
+      #ff7300,
+      #fffb00,
+      #48ff00,
+      #00ffd5,
+      #002bff,
+      #7a00ff,
+      #ff00c8,
+      #ff0000
+    );
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    background-size: 400%;
+    z-index: -1;
+    filter: blur(5px);
+    -webkit-filter: blur(5px);
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+    animation: glowing-button-85 20s linear infinite;
+    transition: opacity 0.3s ease-in-out;
+    border-radius: 10px;
+  }
+
+  @keyframes glowing-button-85 {
+    0% {
+      background-position: 0 0;
+    }
+    50% {
+      background-position: 400% 0;
+    }
+    100% {
+      background-position: 0 0;
+    }
+  }
+
+  .button-85:after {
+    z-index: -1;
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #222;
+    left: 0;
+    top: 0;
+    border-radius: 10px;
+  }
+  </style>
+  <button class="button-85" role="button">Enter</button>
+  """, unsafe_allow_html=True)
 
   if x.startswith("QUESTION:"):
-    question = x[9:]
-    relevant_chunks = search_pdf(chunks, question)
+          question = x[9:]
+          relevant_chunks = search_pdf(chunks, question)
 
-    prompt = "Answer the question based on the provided context: {} \n Context: {}".format(
-        question, relevant_chunks)
-    response = model.call(prompt)
-    st.write(response)
-    conversation_history[question] = {
-        'context': relevant_chunks,
-        'response': response
-    }
-
+          prompt = "Answer the question based on the provided context: {} \n Context: {}".format(
+              question, relevant_chunks)
+          response = model.call(prompt)
+          st.markdown(
+              f'<div style="color: white; background-color: black; padding: 10px; border-radius: 5px;">{response}</div>',
+              unsafe_allow_html=True)
   else:
-     if x.strip():
-      convo.send_message(x)
-      if convo.last is not None:
-         st.write(convo.last.text)
-         conversation_history[x] = convo.last.text
-
+          if x.strip():
+              convo.send_message(x)
+              if convo.last is not None:
+                  st.markdown(
+                      f'<div style="color: white; background-color: black; padding: 10px; border-radius: 5px;">{convo.last.text}</div>',
+                      unsafe_allow_html=True)
+                  add_history(x, convo.last.text)
 
 if __name__ == '__main__':
   main()
