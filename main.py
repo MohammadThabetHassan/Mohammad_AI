@@ -93,18 +93,18 @@ def main():
     for chunk in chunks:
         if chunk.strip():
             if isinstance(chunk, str) and chunk.strip() != "":
-                for _ in range(5):  # Retry up to 5 times
+                for _ in range(5): 
                     try:
-                        if chunk.strip():  # Check if chunk is not empty
+                        if chunk.strip():  
                             convo.send_message(chunk)
-                            break  # If the request is successful, break the loop
+                            break  
                     except Exception as e:
                         if "contents.parts must not be empty" in str(e):
                             print(f"Skipping empty chunk.")
                             break
                         else:
                             print(f"Error: {e}. Retrying...")
-                            time.sleep(5)  # Wait for 5 seconds before retrying
+                            time.sleep(5)  
             else:
                 print(f"Invalid chunk: {chunk}")
   st.write(
