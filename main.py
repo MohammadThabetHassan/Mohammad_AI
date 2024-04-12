@@ -178,7 +178,7 @@ def main():
 
           prompt = "Answer the question based on the provided context: {} \n Context: {}".format(
               question, relevant_chunks)
-              response = model.call(prompt)
+          response = model.call(prompt)
           st.markdown(
               f'<div style="color: white; background-color: black; padding: 10px; border-radius: 5px;">{response}</div>',
               unsafe_allow_html=True)
