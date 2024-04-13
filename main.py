@@ -41,7 +41,7 @@ def add_history(user_input, response):
                              height=int(len(message["content"]) / 3))
 st.set_page_config(
     page_title="RAM AI Chatbot",
-    page_icon="img,png",
+    page_icon="m.jpeg",
 )
 def main():
   try:
