@@ -40,8 +40,8 @@ def add_history(user_input, response):
                              disabled=True,
                              height=int(len(message["content"]) / 3))
 st.set_page_config(
-    page_title="Mohammad AI Chatbot",
-    page_icon="path_to_your_icon_file",
+    page_title="RAM AI Chatbot",
+    page_icon="img,png",
 )
 def main():
   try:
@@ -60,7 +60,7 @@ def main():
             }
             </style>
             """, unsafe_allow_html=True)
-      st.title("Mohammad AI Chatbot")
+      st.title("RAM AI Chatbot")
 
       pdf = st.file_uploader("upload file ", type="pdf")
 
