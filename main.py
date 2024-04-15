@@ -90,7 +90,7 @@ def main():
                   else:
                       print(f"Invalid chunk: {chunk}")
       st.write(
-          "Hi there! How can I assist you today? Ask about the PDF by starting with 'QUESTION:'"
+          "Hi there! How can I assist you today?"
       )
       col1, col2 = st.columns([3, 1])
 
